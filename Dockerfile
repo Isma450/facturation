@@ -1,4 +1,3 @@
-# Dockerfile multi-stage pour optimiser la taille et la sécurité
 # Stage 1: Build de l'application
 FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
