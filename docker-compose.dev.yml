@@ -1,6 +1,5 @@
 version: "3.8"
 
-# Override pour l'environnement de développement
 services:
   facturation-app:
     environment:
@@ -24,8 +23,6 @@ services:
       - "8080:8080"
       - "5005:5005" # Port debug Java
 
-    # Variables JVM pour debug ajoutées dans la section environment principale
-
   # PgAdmin activé par défaut en dev
   pgadmin:
-    profiles: [] # Retire le profil debug pour l'activer par défaut
+    profiles: []

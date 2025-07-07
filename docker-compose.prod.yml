@@ -1,6 +1,5 @@
 version: "3.8"
 
-# Override pour l'environnement de production
 services:
   facturation-app:
     environment:

@@ -332,9 +332,9 @@ facturation/
 
 ## 👥 Équipe
 
-- **Développement** : [Votre nom]
-- **Dockerisation** : [Votre nom]
-- **Documentation** : [Votre nom]
+- **Développement** : ismail450
+- **Dockerisation** : Ismail450
+- **Documentation** : Ismail450
 
 ## 📄 Licence
 
