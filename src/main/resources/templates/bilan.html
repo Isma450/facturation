@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bilan CA - Facturation</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="navbar-brand">📄 Facturation</a>
+    <div class="navbar-user">
+        <span>Connecté en tant que : <strong th:text="${session.currentUser?.username ?: 'Utilisateur'}">Utilisateur</strong></span>
+        <a th:href="@{/logout}" class="btn btn-danger btn-small">Déconnexion</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="content-wrapper">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">📊 Bilan du chiffre d'affaires</h1>
+            </div>
+
+            <div class="card-body">
+                <div th:if="${error}" class="alert alert-danger">
+                    <span th:text="${error}"></span>
+                </div>
+
+                <form th:action="@{/bilan}" method="get" class="bilan-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="clientId">Client :</label>
+                            <select name="clientId" id="clientId" class="form-control">
+                                <option value="">Tous les clients</option>
+                                <option th:each="c : ${clients}" 
+                                        th:value="${c.id}" 
+                                        th:text="${c.nom}"
+                                        th:selected="${param.clientId != null and param.clientId[0] == c.id.toString()}"></option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="mode">Mode d'analyse :</label>
+                            <select name="mode" id="mode" class="form-control" onchange="toggleBilanFields()">
+                                <option value="Annuel" th:selected="${param.mode != null and param.mode[0] == 'Annuel'}">Annuel</option>
+                                <option value="Mensuel" th:selected="${param.mode == null or (param.mode != null and param.mode[0] == 'Mensuel')}">Mensuel</option>
+                                <option value="Periode" th:selected="${param.mode != null and param.mode[0] == 'Periode'}">Période personnalisée</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Champs pour mode Annuel -->
+                    <div id="annuelFields" class="form-section hidden">
+                        <div class="form-group">
+                            <label for="anneeSeule">Année :</label>
+                            <select name="annee" id="anneeSeule" class="form-control">
+                                <option th:each="a : ${annees}" 
+                                        th:value="${a}" 
+                                        th:text="${a}"
+                                        th:selected="${param.annee != null and param.annee[0] == a.toString()}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Champs pour mode Mensuel -->
+                    <div id="mensuelFields" class="form-section">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="mois">Mois :</label>
+                                <select name="mois" id="mois" class="form-control">
+                                    <option th:each="m : ${moisList}" 
+                                            th:value="${m.value}" 
+                                            th:text="${m.name}"
+                                            th:selected="${param.mois != null and param.mois[0] == m.value.toString()}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="anneeMensuel">Année :</label>
+                                <select name="annee" id="anneeMensuel" class="form-control">
+                                    <option th:each="a : ${annees}" 
+                                            th:value="${a}" 
+                                            th:text="${a}"
+                                            th:selected="${param.annee != null and param.annee[0] == a.toString()}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Champs pour mode Période -->
+                    <div id="periodeFields" class="form-section hidden">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="debut">Date de début :</label>
+                                <input type="date" name="debut" id="debut" class="form-control" 
+                                       th:value="${param.debut != null ? param.debut[0] : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="fin">Date de fin :</label>
+                                <input type="date" name="fin" id="fin" class="form-control"
+                                       th:value="${param.fin != null ? param.fin[0] : ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">
+                            📊 Générer le bilan
+                        </button>
+                        <a th:href="@{/}" class="btn btn-secondary">
+                            ← Retour à l'accueil
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Résultats du bilan -->
+        <div th:if="${bilan}" class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title">📈 Résultats du bilan</h2>
+                <div class="period-info">
+                    <span class="period-badge">
+                        Du <strong th:text="${#temporals.format(bilan.debut, 'dd/MM/yyyy')}"></strong>
+                        au <strong th:text="${#temporals.format(bilan.fin, 'dd/MM/yyyy')}"></strong>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="bilan-table-container">
+                    <table class="bilan-table">
+                        <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th>Période</th>
+                                <th class="text-right">Chiffre d'affaires</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="entry : ${bilan.caParClient}" class="data-row">
+                                <td>
+                                    <div class="client-info">
+                                        <span class="client-name" th:text="${entry.key?.nom ?: 'Tous les clients'}"></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="period-text">
+                                        <span th:text="${#temporals.format(bilan.debut, 'dd/MM/yyyy')}"></span>
+                                        -
+                                        <span th:text="${#temporals.format(bilan.fin, 'dd/MM/yyyy')}"></span>
+                                    </span>
+                                </td>
+                                <td class="text-right">
+                                    <span class="amount" th:text="${#numbers.formatDecimal(entry.value, 0, 2)} + ' €'"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="2">
+                                    <strong>Total général</strong>
+                                </td>
+                                <td class="text-right">
+                                    <strong class="total-amount" 
+                                            th:text="${#numbers.formatDecimal(bilan.total, 0, 2)} + ' €'">
+                                        0,00 €
+                                    </strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <!-- Actions pour les résultats -->
+                <div class="result-actions">
+                    <form th:action="@{/bilan/pdf}" method="post" style="display: inline;">
+                        <input type="hidden" name="clientId" th:value="${param.clientId != null ? param.clientId[0] : ''}">
+                        <input type="hidden" name="mode" th:value="${param.mode != null ? param.mode[0] : 'Mensuel'}">
+                        <input type="hidden" name="mois" th:value="${param.mois != null ? param.mois[0] : ''}">
+                        <input type="hidden" name="annee" th:value="${param.annee != null ? param.annee[0] : ''}">
+                        <input type="hidden" name="debut" th:value="${param.debut != null ? param.debut[0] : ''}">
+                        <input type="hidden" name="fin" th:value="${param.fin != null ? param.fin[0] : ''}">
+                        <button type="submit" class="btn btn-success">
+                            📄 Exporter en PDF
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleBilanFields() {
+    const mode = document.getElementById('mode').value;
+    const annuelFields = document.getElementById('annuelFields');
+    const mensuelFields = document.getElementById('mensuelFields');
+    const periodeFields = document.getElementById('periodeFields');
+    
+    annuelFields.classList.add('hidden');
+    mensuelFields.classList.add('hidden');
+    periodeFields.classList.add('hidden');
+    
+    switch(mode) {
+        case 'Annuel':
+            annuelFields.classList.remove('hidden');
+            break;
+        case 'Mensuel':
+            mensuelFields.classList.remove('hidden');
+            break;
+        case 'Periode':
+            periodeFields.classList.remove('hidden');
+            break;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    toggleBilanFields();
+});
+</script>
+</body>
+</html>

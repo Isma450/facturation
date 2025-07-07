@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Facturation - Facturation</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="navbar-brand">📄 Facturation</a>
+    <div class="navbar-user">
+        <span>Connecté en tant que : <strong th:text="${session.currentUser?.username ?: 'Utilisateur'}">Utilisateur</strong></span>
+        <a th:href="@{/logout}" class="btn btn-danger btn-small">Déconnexion</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="content-wrapper">
+        <!-- Messages d'alerte -->
+        <div th:if="${success}" class="alert alert-success">
+            <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
+        </div>
+        
+        <div class="card-header">
+            <h1 class="card-title">🧾 Facturation</h1>
+        </div>
+
+        <div class="card-body">
+            <!-- Sélection client -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3 class="form-section-title">🏢 Sélectionner un client</h3>
+                </div>
+                <div class="form-section-body">
+                    <form th:action="@{/factures}" method="get" class="d-flex gap-3 align-items-center">
+                        <div class="form-field" style="flex: 1;">
+                            <label for="clientFacturation">Client à facturer :</label>
+                            <select name="clientId" id="clientFacturation" onchange="this.form.submit()">
+                                <option value="">🏢 Sélectionner un client</option>
+                                <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.nom}" 
+                                        th:selected="${clientSelectionne != null && clientSelectionne.id == c.id}"></option>
+                            </select>
+                        </div>
+                        <div class="form-field" style="flex: none;">
+                            <label style="visibility: hidden;">Action</label>
+                            <a th:href="@{/entreprises/nouveau}" class="btn btn-secondary btn-small">
+                                ➕ Nouveau client
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Navigation par onglets -->
+            <div class="form-section mt-4">
+                <div class="tabs-container">
+                    <div class="tabs-flex">
+                        <button type="button" class="btn btn-primary tab-button active" onclick="showTab('prestations')" id="tab-prestations">
+                            💼 Facturer prestations
+                        </button>
+                        <button type="button" class="btn btn-secondary tab-button" onclick="showTab('factures')" id="tab-factures">
+                            📋 Historique factures
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contenu prestations -->
+                <div id="prestations-content" class="tab-content active">
+                    <div class="table-responsive">
+                        <div class="table-header">
+                            <h3 class="table-title">💼 Prestations à facturer</h3>
+                        </div>
+                        
+                        <!-- Actions groupées -->
+                        <div th:if="${not #lists.isEmpty(prestations)}" class="table-actions-group">
+                            <form id="facturation-form" method="post">
+                                <input type="hidden" name="clientId" th:value="${clientSelectionne?.id}">
+                                
+                                <div class="d-flex gap-3 align-items-center">
+                                    <button type="button" id="select-all-btn" onclick="toggleSelectAll()" 
+                                            class="btn btn-secondary btn-small">
+                                        ☑️ Tout sélectionner
+                                    </button>
+                                    
+                                    <button type="button" onclick="facturerSelection()" 
+                                            class="btn btn-primary" disabled>
+                                        💳 Facturer sélection
+                                    </button>
+                                    
+                                    <button type="button" onclick="apercuSelection()" 
+                                            class="btn btn-outline" disabled>
+                                        👁️ Aperçu sélection
+                                    </button>
+                                    
+                                    <span id="selection-count" style="color: var(--medium-gray); font-style: italic;">
+                                        Aucune prestation sélectionnée
+                                    </span>
+                                </div>
+                            </form>
+                        </div>
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>☑️ Sélection</th>
+                                    <th>🆔 ID</th>
+                                    <th>📅 Date</th>
+                                    <th>🏷️ Type</th>
+                                    <th>📚 Détails</th>
+                                    <th>💰 Montant HT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="p : ${prestations}">
+                                    <td>
+                                        <input type="checkbox" th:value="${p.id}" class="prestation-checkbox" 
+                                               style="transform: scale(1.2); margin: 0;">
+                                    </td>
+                                    <td>
+                                        <strong th:text="'#' + ${p.id}" style="color: var(--primary-blue);"></strong>
+                                    </td>
+                                    <td>
+                                        <strong th:text="${#temporals.format(p.date, 'dd/MM/yyyy')}"></strong>
+                                        <br>
+                                        <small th:text="${#temporals.format(p.date, 'EEEE', #locale)}" style="color: var(--medium-gray); text-transform: capitalize;"></small>
+                                    </td>
+                                    <td>
+                                        <span th:if="${p.getTypeName() == 'Formation'}" class="table-badge table-badge-formation">
+                                            📚 Formation
+                                        </span>
+                                        <span th:if="${p.getTypeName() == 'Consultation'}" class="table-badge table-badge-consultation">
+                                            💼 Consultation
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${p.getTypeName() == 'Formation'}">
+                                            <strong th:text="'Classe: ' + ${p.classe}"></strong>
+                                            <br>
+                                            <em th:text="'Module: ' + ${p.module}" style="color: var(--medium-gray);"></em>
+                                        </div>
+                                        <div th:if="${p.getTypeName() == 'Consultation'}">
+                                            <strong style="color: var(--warning);">Consultation professionnelle</strong>
+                                            <br>
+                                            <em style="color: var(--medium-gray);">TJM: <span th:text="${p.tjm + ' €'}"></span></em>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong th:text="${p.calculerMontant() + ' €'}" style="color: var(--success); font-size: 1.1em;"></strong>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(prestations)}">
+                                    <td colspan="6" class="table-empty">
+                                        <div class="table-empty-icon">💼</div>
+                                        <p><strong>Aucune prestation à facturer</strong></p>
+                                        <p style="color: var(--medium-gray);" th:if="${clientSelectionne != null}">
+                                            Toutes les prestations de ce client ont déjà été facturées
+                                        </p>
+                                        <p style="color: var(--medium-gray);" th:if="${clientSelectionne == null}">
+                                            Sélectionnez un client pour voir ses prestations non facturées
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+                <!-- Contenu factures -->
+                <div id="factures-content" class="tab-content">
+                    <div class="table-responsive">
+                        <div class="table-header">
+                            <h3 class="table-title">📋 Historique des factures</h3>
+                        </div>
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>🆔 ID Facture</th>
+                                    <th>📅 Période</th>
+                                    <th>📊 Prestations</th>
+                                    <th>💰 Total TTC</th>
+                                    <th>⚡ Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="f : ${factures}">
+                                    <td>
+                                        <strong th:text="'#' + ${f.id}" style="color: var(--primary-blue);"></strong>
+                                    </td>
+                                    <td>
+                                        <div th:if="${f.periodeDebut.equals(f.periodeFin)}">
+                                            <strong th:text="${#temporals.format(f.periodeDebut, 'dd/MM/yyyy')}"></strong>
+                                            <br>
+                                            <small style="color: var(--medium-gray);">Facture ponctuelle</small>
+                                        </div>
+                                        <div th:if="${!f.periodeDebut.equals(f.periodeFin)}">
+                                            <strong>
+                                                <span th:text="${#temporals.format(f.periodeDebut, 'dd/MM/yyyy')}"></span>
+                                                →
+                                                <span th:text="${#temporals.format(f.periodeFin, 'dd/MM/yyyy')}"></span>
+                                            </strong>
+                                            <br>
+                                            <small style="color: var(--medium-gray);">Facture périodique</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="table-badge table-badge-info">
+                                            📊 <span th:text="${#lists.size(f.prestations)}"></span> prestation(s)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong th:text="${f.montantTotal() + ' €'}" style="color: var(--success); font-size: 1.1em;"></strong>
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a th:href="@{/factures/pdf/{id}(id=${f.id})}" target="_blank" 
+                                               class="btn btn-primary btn-small" title="Télécharger la facture PDF">
+                                                📄 Télécharger
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(factures)}">
+                                    <td colspan="5" class="table-empty">
+                                        <div class="table-empty-icon">📋</div>
+                                        <p><strong>Aucune facture trouvée</strong></p>
+                                        <p style="color: var(--medium-gray);" th:if="${clientSelectionne != null}">
+                                            Ce client n'a pas encore de factures
+                                        </p>
+                                        <p style="color: var(--medium-gray);" th:if="${clientSelectionne == null}">
+                                            Sélectionnez un client pour voir ses factures
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    const contents = document.querySelectorAll('.tab-content');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    
+    contents.forEach(function(content) {
+        content.classList.remove('active');
+    });
+    
+    tabButtons.forEach(function(tab) {
+        tab.classList.remove('active', 'btn-primary');
+        tab.classList.add('btn-secondary');
+    });
+    
+    document.getElementById(tabName + '-content').classList.add('active');
+    
+    const activeTab = document.getElementById('tab-' + tabName);
+    activeTab.classList.remove('btn-secondary');
+    activeTab.classList.add('btn-primary', 'active');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const tableRows = document.querySelectorAll('.modern-table tbody tr');
+    tableRows.forEach((row, index) => {
+        row.style.animationDelay = `${index * 50}ms`;
+        row.classList.add('fade-in-row');
+    });
+    
+    showTab('prestations');
+    
+    const factureButtons = document.querySelectorAll('button[type="submit"]');
+    factureButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const originalText = this.textContent;
+            this.disabled = true;
+            this.textContent = '⏳ Facturation...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.textContent = originalText;
+            }, 5000);
+        });
+    });
+});
+
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.prestation-checkbox');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+    });
+    
+    selectAllBtn.textContent = allChecked ? '☑️ Tout sélectionner' : '☐ Tout désélectionner';
+    updateActionButtons();
+}
+
+function updateActionButtons() {
+    const checkboxes = document.querySelectorAll('.prestation-checkbox:checked');
+    const facturationForm = document.getElementById('facturation-form');
+    const buttons = facturationForm.querySelectorAll('button[type="button"]:not(#select-all-btn)');
+    const selectionCount = document.getElementById('selection-count');
+    
+    if (checkboxes.length > 0) {
+        buttons.forEach(btn => btn.disabled = false);
+        selectionCount.textContent = `${checkboxes.length} prestation(s) sélectionnée(s)`;
+        selectionCount.style.color = 'var(--success)';
+    } else {
+        buttons.forEach(btn => btn.disabled = true);
+        selectionCount.textContent = 'Aucune prestation sélectionnée';
+        selectionCount.style.color = 'var(--medium-gray)';
+    }
+}
+
+function facturerSelection() {
+    const checkboxes = document.querySelectorAll('.prestation-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('Veuillez sélectionner au moins une prestation à facturer.');
+        return;
+    }
+    
+    const nombrePrestations = checkboxes.length;
+    const confirmation = confirm(`Confirmer la facturation de ${nombrePrestations} prestation(s) sélectionnée(s) ?`);
+    if (!confirmation) {
+        return;
+    }
+    
+    const form = document.getElementById('facturation-form');
+    form.action = '/prestations/facturer';
+    
+    form.querySelectorAll('input[name="prestationsIds"]').forEach(input => input.remove());
+    
+    checkboxes.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'prestationsIds';
+        input.value = cb.value;
+        form.appendChild(input);
+    });
+    
+    form.submit();
+}
+
+function apercuSelection() {
+    const checkboxes = document.querySelectorAll('.prestation-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('Veuillez sélectionner au moins une prestation pour l\'aperçu.');
+        return;
+    }
+    
+    const form = document.getElementById('facturation-form');
+    form.action = '/prestations/apercu';
+    form.target = '_blank'; 
+    
+    form.querySelectorAll('input[name="prestationsIds"]').forEach(input => input.remove());
+    
+    checkboxes.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'prestationsIds';
+        input.value = cb.value;
+        form.appendChild(input);
+    });
+    
+    form.submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.prestation-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateActionButtons);
+    });
+    
+    updateActionButtons();
+});
+</script>
+
+<style>
+/* Styles pour les onglets améliorés */
+.tabs-container {
+    margin: 2rem 0 1rem 0;
+}
+
+.tabs-flex {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--light-blue);
+    padding-bottom: 0.5rem;
+}
+
+.tab-button {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-bottom: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-button.active {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.tab-button::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--primary-blue);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.tab-button.active::before {
+    transform: scaleX(1);
+}
+
+/* Animation pour le contenu des onglets */
+.tab-content {
+    display: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* Badge pour info */
+.table-badge-info {
+    background: #e0f2fe;
+    color: #0277bd;
+    border: 1px solid #b3e5fc;
+}
+
+/* Animation pour les lignes du tableau */
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.fade-in-row {
+    animation: fadeInRow 0.4s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Amélioration des boutons d'action */
+.table-actions .btn {
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+.table-actions .btn:hover {
+    transform: scale(1);
+}
+
+/* Style pour les boutons d'action groupés */
+.table-actions-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--light-gray);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.table-actions-group .btn {
+    min-width: 150px;
+}
+
+.table-actions-group .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.gap-3 {
+    gap: 1rem;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.btn-outline {
+    background: white;
+    border: 2px solid var(--primary-blue);
+    color: var(--primary-blue);
+}
+
+.btn-outline:hover {
+    background: var(--primary-blue);
+    color: white;
+}
+
+/* Style responsive pour les onglets */
+@media (max-width: 768px) {
+    .tabs-flex {
+        flex-direction: column;
+    }
+    
+    .tab-button {
+        border-radius: var(--border-radius);
+        margin-bottom: 0.5rem;
+    }
+    
+    .table-actions {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+</style>
+</body>
+</html>

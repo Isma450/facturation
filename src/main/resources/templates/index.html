@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Facturation - Accueil</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="navbar-brand">📄 Facturation</a>
+    <div class="navbar-user">
+        <span>Connecté en tant que : <strong th:text="${session.currentUser?.username ?: 'Utilisateur'}">Utilisateur</strong></span>
+        <a th:href="@{/logout}" class="btn btn-danger btn-small">Déconnexion</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="welcome-card">
+        <h1>Bienvenue dans votre espace facturation</h1>
+        <p>Gérez vos prestations, créez vos factures et suivez votre activité</p>
+    </div>
+    
+    <div class="cards-grid">
+        <a th:href="@{/prestations}" class="dashboard-card">
+            <div class="dashboard-card-icon">📋</div>
+            <div class="dashboard-card-title">Gestion des prestations</div>
+            <div class="dashboard-card-description">Ajouter, modifier et consulter vos prestations</div>
+        </a>
+        
+        <a th:href="@{/factures}" class="dashboard-card">
+            <div class="dashboard-card-icon">🧾</div>
+            <div class="dashboard-card-title">Facturation</div>
+            <div class="dashboard-card-description">Créer des factures et consulter l'historique</div>
+        </a>
+        
+        <a th:href="@{/entreprises}" class="dashboard-card">
+            <div class="dashboard-card-icon">🏢</div>
+            <div class="dashboard-card-title">Clients</div>
+            <div class="dashboard-card-description">Gérer vos entreprises clientes</div>
+        </a>
+        
+        <a th:href="@{/bilan}" class="dashboard-card">
+            <div class="dashboard-card-icon">📊</div>
+            <div class="dashboard-card-title">Bilan CA</div>
+            <div class="dashboard-card-description">Analyser votre chiffre d'affaires</div>
+        </a>
+    </div>
+</div>
+</body>
+</html>

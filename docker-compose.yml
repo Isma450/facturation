@@ -1,0 +1,121 @@
+version: "3.8"
+
+services:
+  # Base de données PostgreSQL
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: facturation-postgres
+    environment:
+      POSTGRES_DB: financial_db
+      POSTGRES_USER: facturation_user
+      POSTGRES_PASSWORD: secure_password_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - facturation-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U facturation_user -d financial_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Application Spring Boot
+  facturation-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: facturation-spring
+    environment:
+      # Configuration Base de données
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/financial_db
+      SPRING_DATASOURCE_USERNAME: facturation_user
+      SPRING_DATASOURCE_PASSWORD: secure_password_2024
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+
+      # Configuration JPA
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+
+      # Configuration Thymeleaf
+      SPRING_THYMELEAF_CACHE: "false"
+
+      # Configuration locale
+      SPRING_WEB_LOCALE: fr_FR
+      SPRING_WEB_LOCALE_RESOLVER: fixed
+
+      # Configuration serveur
+      SERVER_PORT: 8080
+
+      # Profil Spring
+      SPRING_PROFILES_ACTIVE: docker
+
+      # Configuration JVM
+      JAVA_OPTS: "-Xmx512m -Xms256m -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "8080:8080"
+    volumes:
+      - pdf_storage:/app/pdf
+    networks:
+      - facturation-network
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # PgAdmin pour l'administration de la base (optionnel, pour le debug)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: facturation-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@facturation.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - facturation-network
+    depends_on:
+      - postgres-db
+    profiles:
+      - debug
+    restart: unless-stopped
+
+# Réseaux
+networks:
+  facturation-network:
+    driver: bridge
+    name: facturation-net
+
+# Volumes pour la persistance
+volumes:
+  postgres_data:
+    driver: local
+    name: facturation-postgres-data
+  pdf_storage:
+    driver: local
+    name: facturation-pdf-storage
+  pgadmin_data:
+    driver: local
+    name: facturation-pgadmin-data

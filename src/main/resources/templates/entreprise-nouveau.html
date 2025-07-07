@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouveau client - Facturation</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="navbar-brand">📄 Facturation</a>
+    <div class="navbar-user">
+        <span>Connecté en tant que : <strong th:text="${session.currentUser?.username ?: 'Utilisateur'}">Utilisateur</strong></span>
+        <a th:href="@{/logout}" class="btn btn-danger btn-small">Déconnexion</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="content-wrapper">
+        <!-- Messages d'alerte -->
+        <div th:if="${success}" class="alert alert-success">
+            <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
+        </div>
+        
+        <div class="card-header">
+            <h1 class="card-title" th:text="${isEdit} ? '✏️ Modifier le client' : '🏢 Nouveau client'">🏢 Nouveau client</h1>
+        </div>
+
+        <div class="card-body">
+            <!-- Navigation de retour -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3 class="form-section-title" th:text="${isEdit} ? '✏️ Modification des informations' : '📝 Informations du client'">📝 Informations du client</h3>
+                </div>
+                <div class="form-section-body">
+                    <p style="color: var(--medium-gray); margin-bottom: 1.5rem;" 
+                       th:text="${isEdit} ? 'Modifiez les informations de votre client. Tous les champs sont obligatoires.' : 'Renseignez les informations de votre nouveau client. Tous les champs sont obligatoires.'">
+                        Renseignez les informations de votre nouveau client. Tous les champs sont obligatoires.
+                    </p>
+
+                    <form th:action="@{/entreprises/ajouter}" th:object="${entreprise}" method="post" class="modern-form">
+                        <!-- Champ caché pour l'ID en cas d'édition -->
+                        <input type="hidden" th:field="*{id}" th:if="${isEdit}">
+                        
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="nom">
+                                    <span class="label-icon">🏢</span>
+                                    <span class="label-text">Nom de l'entreprise</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <input type="text" th:field="*{nom}" id="nom" required 
+                                       placeholder="Ex: ACME Corporation"
+                                       autocomplete="organization">
+                                <small class="form-help">
+                                    💡 Le nom commercial ou la raison sociale de l'entreprise
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="adresse">
+                                    <span class="label-icon">📍</span>
+                                    <span class="label-text">Adresse complète</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <input type="text" th:field="*{adresse}" id="adresse" required 
+                                       placeholder="Ex: 123 Rue de la République, 75001 Paris"
+                                       autocomplete="street-address">
+                                <small class="form-help">
+                                    💡 Adresse de facturation (numéro, rue, code postal, ville)
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="siret">
+                                    <span class="label-icon">🆔</span>
+                                    <span class="label-text">Numéro SIRET</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <input type="text" th:field="*{siret}" id="siret" 
+                                       pattern="\d{14}" title="Le SIRET doit contenir exactement 14 chiffres" required
+                                       placeholder="Ex: 12345678901234" maxlength="14"
+                                       autocomplete="off">
+                                <small class="form-help">
+                                    💡 14 chiffres exactement (sans espaces ni tirets)
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="email">
+                                    <span class="label-icon">📧</span>
+                                    <span class="label-text">Adresse email</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <input type="email" th:field="*{email}" id="email" required 
+                                       placeholder="Ex: contact@entreprise.com"
+                                       autocomplete="email">
+                                <small class="form-help">
+                                    💡 Adresse email de contact pour l'envoi des factures
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions du formulaire -->
+                        <div class="form-actions">
+                            <a th:href="@{/entreprises}" class="btn btn-secondary">
+                                ⬅️ Retour à la liste
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-submit" 
+                                    th:text="${isEdit} ? '💾 Modifier le client' : '💾 Enregistrer le client'">
+                                💾 Enregistrer le client
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.modern-form');
+    const submitBtn = document.querySelector('.btn-submit');
+    const inputs = document.querySelectorAll('input[required]');
+    
+    form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ Enregistrement en cours...';
+    });
+    
+    inputs.forEach(input => {
+        const field = input.closest('.form-field');
+        
+        if (input.id === 'siret') {
+            input.addEventListener('input', function() {
+                let value = this.value.replace(/\D/g, ''); 
+                if (value.length > 14) {
+                    value = value.substring(0, 14);
+                }
+                this.value = value;
+                
+                validateField(this, field);
+            });
+        } else {
+            input.addEventListener('input', function() {
+                validateField(this, field);
+            });
+        }
+        
+        input.addEventListener('focus', function() {
+            field.style.transform = 'translateY(-3px)';
+            field.style.transition = 'all 0.3s ease';
+        });
+        
+        input.addEventListener('blur', function() {
+            field.style.transform = 'translateY(0)';
+            validateField(this, field);
+        });
+        
+        if (input.value.trim() !== '') {
+            validateField(input, field);
+        }
+    });
+    
+    function validateField(input, field) {
+        field.classList.remove('valid', 'invalid');
+        
+        if (input.value.trim() === '') {
+            return; 
+        }
+        
+        let isValid = true;
+        
+        switch (input.type) {
+            case 'email':
+                isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value);
+                break;
+            case 'text':
+                if (input.id === 'siret') {
+                    isValid = /^\d{14}$/.test(input.value);
+                } else {
+                    isValid = input.value.trim().length >= 2;
+                }
+                break;
+            default:
+                isValid = input.checkValidity();
+        }
+        
+        if (isValid) {
+            field.classList.add('valid');
+            input.style.borderColor = 'var(--success)';
+        } else {
+            field.classList.add('invalid');
+            input.style.borderColor = 'var(--danger)';
+        }
+    }
+    
+    form.addEventListener('submit', function(e) {
+        let isFormValid = true;
+        
+        inputs.forEach(input => {
+            const field = input.closest('.form-field');
+            validateField(input, field);
+            
+            if (field.classList.contains('invalid') || input.value.trim() === '') {
+                isFormValid = false;
+            }
+        });
+        
+        if (!isFormValid) {
+            e.preventDefault();
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = submitBtn.getAttribute('data-original-text') || '💾 Enregistrer le client';
+            
+            const firstInvalid = document.querySelector('.form-field.invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+    
+    submitBtn.setAttribute('data-original-text', submitBtn.innerHTML);
+});
+</script>
+
+<style>
+/* Styles pour le formulaire moderne */
+.modern-form {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.form-row {
+    margin-bottom: 2rem;
+}
+
+.form-field {
+    position: relative;
+    background: white;
+    border: 2px solid var(--light-gray);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.form-field:hover {
+    border-color: var(--primary-blue);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.form-field:focus-within {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.label-icon {
+    font-size: 1.3rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.label-text {
+    flex: 1;
+}
+
+.required-star {
+    color: var(--danger);
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.form-field input {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    background: #fafbff;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.form-field input:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-field input:valid:not(:placeholder-shown) {
+    border-color: var(--success);
+    background: #f0f9ff;
+}
+
+.form-field input:invalid:not(:placeholder-shown) {
+    border-color: var(--danger);
+    background: #fef2f2;
+}
+
+.form-help {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--medium-gray);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 12px;
+    border: 1px solid var(--light-gray);
+}
+
+.btn-submit {
+    min-width: 250px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, #1e40af 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    padding: 1rem 2rem;
+    font-weight: 600;
+    border: 2px solid var(--medium-gray);
+    background: white;
+    color: var(--medium-gray);
+}
+
+.btn-secondary:hover {
+    border-color: var(--primary-blue);
+    color: var(--primary-blue);
+    background: #f8fafc;
+}
+
+/* Indicateurs visuels */
+.form-field::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-blue), var(--success));
+    border-radius: 12px 12px 0 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.form-field:focus-within::before {
+    opacity: 1;
+}
+
+/* Animation de chargement */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.btn-submit:disabled {
+    animation: pulse 1.5s infinite;
+}
+
+/* Style responsive */
+@media (max-width: 768px) {
+    .form-actions {
+        flex-direction: column-reverse;
+        gap: 1rem;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .modern-form {
+        max-width: none;
+        margin: 0;
+    }
+    
+    .form-field {
+        padding: 1.25rem;
+    }
+    
+    .form-field label {
+        font-size: 1rem;
+    }
+    
+    .form-field input {
+        font-size: 1rem;
+        padding: 0.875rem;
+    }
+}
+
+/* Amélioration de l'accessibilité */
+.form-field input:focus + .form-help {
+    color: var(--primary-blue);
+    font-weight: 600;
+}
+
+/* États de validation visuels */
+.form-field.valid {
+    border-color: var(--success);
+    background: linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 100%);
+}
+
+.form-field.invalid {
+    border-color: var(--danger);
+    background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+}
+
+/* Icônes de validation */
+.form-field.valid::after {
+    content: '✓';
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    color: var(--success);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.form-field.invalid::after {
+    content: '⚠';
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    color: var(--danger);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+</style>
+</style>
+</body>
+</html>

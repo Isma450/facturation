@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des clients - Facturation</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="navbar-brand">📄 Facturation</a>
+    <div class="navbar-user">
+        <span>Connecté en tant que : <strong th:text="${session.currentUser?.username ?: 'Utilisateur'}">Utilisateur</strong></span>
+        <a th:href="@{/logout}" class="btn btn-danger btn-small">Déconnexion</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="content-wrapper">
+        <!-- Messages d'alerte -->
+        <div th:if="${success}" class="alert alert-success">
+            <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
+        </div>
+        
+        <div class="card-header">
+            <h1 class="card-title">🏢 Gestion des clients</h1>
+        </div>
+
+        <div class="card-body">
+            <!-- Section d'ajout rapide -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3 class="form-section-title">➕ Actions rapides</h3>
+                </div>
+                <div class="form-section-body">
+                    <div class="d-flex gap-3 align-items-center">
+                        <a th:href="@{/entreprises/nouveau}" class="btn btn-primary">
+                            ➕ Nouveau client
+                        </a>
+                        <span class="text-info">
+                            📊 Total : <strong th:text="${#lists.size(entreprises)}">0</strong> client(s) enregistré(s)
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tableau des clients -->
+            <div class="form-section mt-4">
+                <div class="table-responsive">
+                    <div class="table-header">
+                        <h3 class="table-title">👥 Liste des clients</h3>
+                    </div>
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>🏢 Nom de l'entreprise</th>
+                                <th>📧 Email</th>
+                                <th>🆔 SIRET</th>
+                                <th>📍 Adresse</th>
+                                <th>⚡ Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="entreprise : ${entreprises}">
+                                <td>
+                                    <strong th:text="${entreprise.nom}" style="color: var(--primary-blue);"></strong>
+                                </td>
+                                <td>
+                                    <a th:href="'mailto:' + ${entreprise.email}" th:text="${entreprise.email}" 
+                                       style="color: var(--primary-blue); text-decoration: none;"></a>
+                                </td>
+                                <td>
+                                    <code th:text="${entreprise.siret}" style="background: var(--light-gray); padding: 2px 6px; border-radius: 4px; font-size: 0.9em;"></code>
+                                </td>
+                                <td>
+                                    <span th:text="${entreprise.adresse}" style="color: var(--medium-gray);"></span>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <a th:href="@{/entreprises/edit/{id}(id=${entreprise.id})}" 
+                                           class="btn btn-secondary btn-small" title="Modifier le client">
+                                            ✏️ Modifier
+                                        </a>
+                                        <a th:href="@{/entreprises/delete/{id}(id=${entreprise.id})}" 
+                                           class="btn btn-danger btn-small" title="Supprimer le client"
+                                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce client ?\\n\\nAttention : Cette action est irréversible.')">
+                                            🗑️ Supprimer
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(entreprises)}">
+                                <td colspan="5" class="table-empty">
+                                    <div class="table-empty-icon">🏢</div>
+                                    <p><strong>Aucun client enregistré</strong></p>
+                                    <p style="color: var(--medium-gray);">
+                                        Commencez par ajouter votre premier client pour gérer vos facturations
+                                    </p>
+                                    <a th:href="@{/entreprises/nouveau}" class="btn btn-primary mt-2">
+                                        ➕ Ajouter votre premier client
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableRows = document.querySelectorAll('.modern-table tbody tr');
+    tableRows.forEach((row, index) => {
+        row.style.animationDelay = `${index * 50}ms`;
+        row.classList.add('fade-in-row');
+    });
+});
+</script>
+
+<style>
+/* Styles pour les actions du tableau */
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.text-info {
+    color: var(--primary-blue);
+    font-style: italic;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}
+
+/* Animation pour les lignes du tableau */
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.fade-in-row {
+    animation: fadeInRow 0.4s ease-out forwards;
+}
+
+/* Style responsive */
+@media (max-width: 768px) {
+    .table-actions {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+</style>
+</body>
+</html>

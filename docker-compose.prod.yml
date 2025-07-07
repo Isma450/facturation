@@ -1,0 +1,50 @@
+version: "3.8"
+
+# Override pour l'environnement de production
+services:
+  facturation-app:
+    environment:
+      # Configuration optimisée pour la production
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "false"
+      SPRING_THYMELEAF_CACHE: "true"
+
+      # Logs de production
+      LOGGING_LEVEL_ROOT: WARN
+      LOGGING_LEVEL_COM_MYAPP_FACTURATION: INFO
+
+      # Sécurité renforcée
+      SERVER_ERROR_INCLUDE_STACKTRACE: never
+      SERVER_ERROR_INCLUDE_MESSAGE: never
+
+      # Performance optimisée
+      JAVA_OPTS: "-Xmx1g -Xms512m -XX:+UseG1GC -XX:+UseStringDeduplication"
+
+    # Pas de port debug en production
+    ports:
+      - "8080:8080"
+
+    # Limites de ressources
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+
+  postgres-db:
+    # Limites de ressources pour PostgreSQL
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+
+# PgAdmin désactivé en production
+profiles:
+  - production

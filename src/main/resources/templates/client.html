@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouveau client - Facturation</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="navbar-brand">📄 Facturation</a>
+    <div class="navbar-user">
+        <span>Connecté en tant que : <strong th:text="${session.currentUser?.username ?: 'Utilisateur'}">Utilisateur</strong></span>
+        <a th:href="@{/logout}" class="btn btn-danger btn-small">Déconnexion</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="content-wrapper">
+        <div class="card-header">
+            <h1 class="card-title">🏢 Créer un client</h1>
+        </div>
+
+        <div class="card-body">
+            <form th:action="@{/entreprises/ajouter}" th:object="${entreprise}" method="post">
+                <div class="form-group">
+                    <label for="nom" class="form-label">Nom de l'entreprise</label>
+                    <input type="text" th:field="*{nom}" id="nom" class="form-control" required 
+                           placeholder="Nom de l'entreprise">
+                </div>
+                
+                <div class="form-group">
+                    <label for="adresse" class="form-label">Adresse</label>
+                    <input type="text" th:field="*{adresse}" id="adresse" class="form-control" required 
+                           placeholder="Adresse complète">
+                </div>
+                
+                <div class="form-group">
+                    <label for="siret" class="form-label">SIRET</label>
+                    <input type="text" th:field="*{siret}" id="siret" class="form-control" 
+                           pattern="\d{14}" title="Le SIRET doit contenir exactement 14 chiffres" required
+                           placeholder="14 chiffres exactement">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" th:field="*{email}" id="email" class="form-control" required 
+                           placeholder="contact@entreprise.com">
+                </div>
+                
+                <div class="d-flex gap-2 justify-content-between">
+                    <a th:href="@{/entreprises}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

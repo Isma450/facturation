@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des prestations - Facturation</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="navbar-brand">📄 Facturation</a>
+    <div class="navbar-user">
+        <span>Connecté en tant que : <strong th:text="${session.currentUser?.username ?: 'Utilisateur'}">Utilisateur</strong></span>
+        <a th:href="@{/logout}" class="btn btn-danger btn-small">Déconnexion</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="content-wrapper">
+        <!-- Messages d'alerte -->
+        <div th:if="${success}" class="alert alert-success">
+            <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
+        </div>
+        
+        <div class="card-header">
+            <h1 class="card-title">📋 Gestion des prestations</h1>
+        </div>
+
+        <div class="card-body">
+            <!-- Sélection client -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3 class="form-section-title">🏢 Filtrer par client</h3>
+                </div>
+                <div class="form-section-body">
+                    <form th:action="@{/prestations}" method="get" class="d-flex gap-3 align-items-center">
+                        <div class="form-field" style="flex: 1;">
+                            <label for="clientFilter">Sélectionner un client :</label>
+                            <select name="clientId" id="clientFilter" onchange="this.form.submit()">
+                                <option value="">🏢 Tous les clients</option>
+                                <option th:each="c : ${entreprises}" th:value="${c.id}" th:text="${c.nom}" 
+                                        th:selected="${clientSelectionne != null && clientSelectionne.id == c.id}"></option>
+                            </select>
+                        </div>
+                        <div class="form-field" style="flex: none;">
+                            <label style="visibility: hidden;">Action</label>
+                            <a th:href="@{/entreprises/nouveau}" class="btn btn-secondary btn-small">
+                                ➕ Nouveau client
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Formulaire nouvelle prestation -->
+            <div class="form-section mt-4">
+                <div class="form-section-header">
+                    <h3 class="form-section-title">✨ Nouvelle prestation</h3>
+                </div>
+                <div class="form-section-body">
+                    <form th:action="@{/prestations/ajouter}" th:object="${prestationForm}" method="post">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="type">Type de prestation :</label>
+                                <select th:field="*{type}" id="type" onchange="toggleFields()" required>
+                                    <option value="">-- Sélectionner un type --</option>
+                                    <option value="Formation">📚 Formation</option>
+                                    <option value="Consultation">💼 Consultation</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="clientId">Client :</label>
+                                <select th:field="*{clientId}" id="clientId" required>
+                                    <option value="">-- Sélectionner un client --</option>
+                                    <option th:each="c : ${entreprises}" th:value="${c.id}" th:text="${c.nom}"></option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="date">Date :</label>
+                                <input type="date" th:field="*{date}" id="date" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Champs spécifiques aux formations -->
+                        <div id="formationFields" class="form-conditional">
+                            <h4 style="margin-bottom: 1rem; color: var(--primary-blue);">📚 Détails de la formation</h4>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="heureDebut">Heure de début :</label>
+                                    <input type="time" th:field="*{heureDebut}" id="heureDebut">
+                                </div>
+                                
+                                <div class="form-field">
+                                    <label for="heureFin">Heure de fin :</label>
+                                    <input type="time" th:field="*{heureFin}" id="heureFin">
+                                </div>
+                                
+                                <div class="form-field">
+                                    <label for="classe">Classe :</label>
+                                    <input type="text" th:field="*{classe}" id="classe" placeholder="Ex: BTS SIO 1ère année">
+                                </div>
+                                
+                                <div class="form-field">
+                                    <label for="module">Module :</label>
+                                    <input type="text" th:field="*{module}" id="module" placeholder="Ex: Programmation Java">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Champs spécifiques aux consultations -->
+                        <div id="consultationFields" class="form-conditional hidden">
+                            <h4 style="margin-bottom: 1rem; color: var(--warning);">💼 Détails de la consultation</h4>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="tjm">Taux Journalier Moyen (€) :</label>
+                                    <input type="number" th:field="*{tjm}" id="tjm" step="0.01" min="0" placeholder="Ex: 600.00">
+                                    <small style="color: var(--medium-gray); margin-top: 0.25rem;">Montant en euros pour cette consultation</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <button type="submit" class="btn-submit">
+                                ✅ Ajouter la prestation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Historique des prestations -->
+            <div class="table-responsive">
+                <div class="table-header">
+                    <h3 class="table-title">📋 Historique des prestations</h3>
+                </div>
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>📅 Date</th>
+                            <th>⏰ Horaires</th>
+                            <th>🏷️ Type</th>
+                            <th>📚 Détails</th>
+                            <th>🏢 Client</th>
+                            <th>💰 Montant</th>
+                            <th>⚡ Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${prestations}">
+                            <td>
+                                <strong th:text="${#temporals.format(p.date, 'dd/MM/yyyy')}"></strong>
+                                <br>
+                                <small th:text="${#temporals.format(p.date, 'EEEE', #locale)}" style="color: var(--medium-gray); text-transform: capitalize;"></small>
+                            </td>
+                            <td>
+                                <span th:if="${p.getTypeName() == 'Formation'}" class="table-badge table-badge-formation">
+                                    <span th:text="${#temporals.format(p.heureDebut, 'HH:mm')}"></span>
+                                    →
+                                    <span th:text="${#temporals.format(p.heureFin, 'HH:mm')}"></span>
+                                </span>
+                                <span th:if="${p.getTypeName() == 'Consultation'}" class="table-badge table-badge-consultation">
+                                    Journée complète
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${p.getTypeName() == 'Formation'}" class="table-badge table-badge-formation">
+                                    📚 Formation
+                                </span>
+                                <span th:if="${p.getTypeName() == 'Consultation'}" class="table-badge table-badge-consultation">
+                                    💼 Consultation
+                                </span>
+                            </td>
+                            <td>
+                                <div th:if="${p.getTypeName() == 'Formation'}">
+                                    <strong th:text="'Classe: ' + ${p.classe}"></strong>
+                                    <br>
+                                    <em th:text="'Module: ' + ${p.module}" style="color: var(--medium-gray);"></em>
+                                </div>
+                                <div th:if="${p.getTypeName() == 'Consultation'}">
+                                    <strong style="color: var(--warning);">Consultation professionnelle</strong>
+                                    <br>
+                                    <em style="color: var(--medium-gray);">TJM: <span th:text="${p.tjm + ' €'}"></span></em>
+                                </div>
+                            </td>
+                            <td>
+                                <strong th:text="${p.client.nom}" style="color: var(--primary-blue);"></strong>
+                            </td>
+                            <td>
+                                <strong th:text="${p.calculerMontant() + ' €'}" style="color: var(--success); font-size: 1.1em;"></strong>
+                            </td>
+                            <td>
+                                <div class="table-actions">
+                                    <a th:href="@{/factures/preview/{id}(id=${p.id})}" target="_blank" 
+                                       class="btn btn-secondary btn-small" title="Prévisualiser la facture">
+                                        👁️ Aperçu
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(prestations)}">
+                            <td colspan="7" class="table-empty">
+                                <div class="table-empty-icon">📋</div>
+                                <p><strong>Aucune prestation trouvée</strong></p>
+                                <p style="color: var(--medium-gray);">Commencez par ajouter votre première prestation ci-dessus</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFields() {
+    const typeSelect = document.getElementById('type');
+    const formationFields = document.getElementById('formationFields');
+    const consultationFields = document.getElementById('consultationFields');
+    
+    // Réinitialiser l'affichage
+    formationFields.classList.remove('visible');
+    consultationFields.classList.remove('visible');
+    formationFields.classList.add('hidden');
+    consultationFields.classList.add('hidden');
+    
+    const selectedType = typeSelect.value;
+    
+    if (selectedType === 'Formation') {
+        formationFields.classList.remove('hidden');
+        formationFields.classList.add('visible');
+        
+        document.getElementById('heureDebut').required = true;
+        document.getElementById('heureFin').required = true;
+        document.getElementById('classe').required = true;
+        document.getElementById('module').required = true;
+        document.getElementById('tjm').required = false;
+        
+    } else if (selectedType === 'Consultation') {
+        consultationFields.classList.remove('hidden');
+        consultationFields.classList.add('visible');
+        
+        document.getElementById('tjm').required = true;
+        document.getElementById('heureDebut').required = false;
+        document.getElementById('heureFin').required = false;
+        document.getElementById('classe').required = false;
+        document.getElementById('module').required = false;
+    } else {
+        document.getElementById('heureDebut').required = false;
+        document.getElementById('heureFin').required = false;
+        document.getElementById('classe').required = false;
+        document.getElementById('module').required = false;
+        document.getElementById('tjm').required = false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    toggleFields();
+    
+    const tableRows = document.querySelectorAll('.modern-table tbody tr');
+    tableRows.forEach((row, index) => {
+        row.style.animationDelay = `${index * 50}ms`;
+        row.classList.add('fade-in-row');
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[th\\:action*="prestations/ajouter"]');
+    const submitBtn = document.querySelector('.btn-submit');
+    const originalText = submitBtn.textContent;
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const type = document.getElementById('type').value;
+            const client = document.getElementById('clientId').value;
+            const date = document.getElementById('date').value;
+            
+            if (!type || !client || !date) {
+                e.preventDefault();
+                showErrorMessage('Veuillez remplir tous les champs obligatoires (Type, Client, Date)');
+                return false;
+            }
+            
+            if (type === 'Formation') {
+                const heureDebut = document.getElementById('heureDebut').value;
+                const heureFin = document.getElementById('heureFin').value;
+                const classe = document.getElementById('classe').value;
+                const module = document.getElementById('module').value;
+                
+                if (!heureDebut || !heureFin || !classe || !module) {
+                    e.preventDefault();
+                    showErrorMessage('Veuillez remplir tous les champs de la formation');
+                    return false;
+                }
+                
+                if (heureDebut >= heureFin) {
+                    e.preventDefault();
+                    showErrorMessage('L\'heure de fin doit être postérieure à l\'heure de début');
+                    return false;
+                }
+            }
+            
+            if (type === 'Consultation') {
+                const tjm = document.getElementById('tjm').value;
+                
+                if (!tjm || parseFloat(tjm) <= 0) {
+                    e.preventDefault();
+                    showErrorMessage('Veuillez saisir un TJM valide (supérieur à 0)');
+                    return false;
+                }
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Ajout en cours...';
+            
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }, 5000);
+        });
+    }
+});
+
+function showErrorMessage(message) {
+    const oldError = document.querySelector('.validation-message');
+    if (oldError) {
+        oldError.remove();
+    }
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'validation-message';
+    errorDiv.style.display = 'block';
+    errorDiv.textContent = message;
+    
+    const form = document.querySelector('form[th\\:action*="prestations/ajouter"]');
+    form.appendChild(errorDiv);
+    
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    setTimeout(() => {
+        if (errorDiv) {
+            errorDiv.style.opacity = '0';
+            setTimeout(() => errorDiv.remove(), 300);
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+/* Animation pour les lignes du tableau */
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.fade-in-row {
+    animation: fadeInRow 0.4s ease-out forwards;
+}
+
+/* Amélioration de l'apparence des champs conditionnels */
+.form-conditional {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.form-conditional.visible {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 500px;
+}
+
+/* Animation pour les boutons d'action */
+.table-actions .btn {
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+.table-actions .btn:hover {
+    transform: scale(1);
+}
+
+/* Style pour les messages de validation */
+.validation-message {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    display: none;
+}
+</style>
+</body>
+</html>

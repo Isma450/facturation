@@ -1,0 +1,31 @@
+version: "3.8"
+
+# Override pour l'environnement de développement
+services:
+  facturation-app:
+    environment:
+      # Mode debug activé
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_THYMELEAF_CACHE: "false"
+
+      # Logs plus détaillés
+      LOGGING_LEVEL_COM_MYAPP_FACTURATION: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
+
+      # Hot reload (si supporté)
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+
+      # Variables JVM pour debug
+      JAVA_OPTS: "-Xmx512m -Xms256m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+
+    # Port mapping pour debug
+    ports:
+      - "8080:8080"
+      - "5005:5005" # Port debug Java
+
+    # Variables JVM pour debug ajoutées dans la section environment principale
+
+  # PgAdmin activé par défaut en dev
+  pgadmin:
+    profiles: [] # Retire le profil debug pour l'activer par défaut
