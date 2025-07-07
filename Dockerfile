@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Point d'entrée avec dumb-init pour gestion des signaux
 ENTRYPOINT ["dumb-init", "--"]
-CMD sh -c "java $JAVA_OPTS -jar app.jar"
+CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
