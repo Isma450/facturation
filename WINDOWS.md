@@ -1,6 +1,6 @@
-# 🪟 Instructions pour Windows
+# Instructions pour Windows
 
-## 📋 Prérequis
+## Prérequis
 
 1. **Docker Desktop pour Windows**
 
@@ -13,7 +13,7 @@
    - Ouvrir PowerShell ou Command Prompt
    - Taper : `docker --version`
 
-## 🚀 Démarrage de l'Application
+## Démarrage de l'Application
 
 ### Option 1 : PowerShell (Recommandé)
 
@@ -47,7 +47,7 @@
    docker-compose up --build
    ```
 
-## 🌐 Accès à l'Application
+## Accès à l'Application
 
 Une fois démarrée, l'application sera accessible sur :
 
@@ -55,7 +55,7 @@ Une fois démarrée, l'application sera accessible sur :
 - **Base de données** : localhost:5432
 - **PgAdmin** (debug) : http://localhost:5050
 
-## ❌ Problèmes Courants Windows
+## Problèmes Courants Windows
 
 ### Docker Desktop ne démarre pas
 
@@ -84,13 +84,13 @@ taskkill /F /PID <numero_du_processus>
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-## 🛑 Arrêter l'Application
+## Arrêter l'Application
 
 ```cmd
 docker-compose down
 ```
 
-## 📞 Support
+## Support
 
 Si vous rencontrez des problèmes :
 
@@ -99,7 +99,7 @@ Si vous rencontrez des problèmes :
 3. Redémarrer Docker Desktop
 4. Redémarrer l'ordinateur si nécessaire
 
-## 🎯 Test Rapide
+## Test Rapide
 
 Pour vérifier que tout fonctionne :
 
@@ -107,4 +107,4 @@ Pour vérifier que tout fonctionne :
 2. Ouvrir http://localhost:8080 dans le navigateur
 3. Vous devriez voir la page de connexion de l'application
 
-✅ **Succès !** L'application est prête à être utilisée.
+**Succès !** L'application est prête à être utilisée.

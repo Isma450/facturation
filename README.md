@@ -1,10 +1,19 @@
-# 📊 Application de Facturation Dockerisée
+# Application de Facturation Dockerisée
 
 > Application web de gestion de facturation développée en Spring Boot avec PostgreSQL, entièrement dockerisée pour une mise en œuvre simplifiée.
 
-## 🚀 Démarrage Rapide
+## Déma## Sécurité
 
-### 🐧 Linux / macOS
+### Mesures de sécurité implémentées :
+
+- Utilisateur non-root dans les conteneurs
+- Images Al## Résolution de Problèmesine (surface d'attaque réduite)
+- Secrets via variables d'environnement
+- Réseau isolé pour les services
+- Health checks avec timeout
+- Gestion propre des signaux (dumb-init)de
+
+### Linux / macOS
 
 Pour lancer l'application en une seule commande :
 
@@ -12,7 +21,7 @@ Pour lancer l'application en une seule commande :
 ./start-demo.sh
 ```
 
-### 🪟 Windows
+### Windows
 
 **PowerShell (Recommandé)** :
 
@@ -26,7 +35,7 @@ Pour lancer l'application en une seule commande :
 start-demo.bat
 ```
 
-### 🐳 Manuel (tous OS)
+### Manuel (tous OS)
 
 ```bash
 docker-compose up --build
@@ -34,16 +43,16 @@ docker-compose up --build
 
 L'application sera accessible sur : **http://localhost:8080**
 
-## 📋 Prérequis
+## Prérequis
 
-### 🐧 Linux / macOS
+### Linux / macOS
 
 - Docker Engine 20.10+
 - Docker Compose V2
 - 2 GB de RAM libre
 - Ports 8080 et 5432 disponibles
 
-### 🪟 Windows
+### Windows
 
 - **Docker Desktop pour Windows** ([Télécharger](https://www.docker.com/products/docker-desktop))
 - **Windows 10/11** avec WSL2 activé
@@ -51,13 +60,53 @@ L'application sera accessible sur : **http://localhost:8080**
 - 2 GB de RAM libre
 - Ports 8080 et 5432 disponibles
 
-### ⚙️ Configuration Docker Desktop Windows
+### Configuration Docker Desktop Windows
 
 1. Installer Docker Desktop
 2. Activer WSL2 integration
 3. S'assurer que Docker est démarré (icône dans la barre des tâches)
 
-## 🏗️ Architecture Dockerisée
+## Configuration Environnement
+
+### Fichier .env requis
+
+Avant de lancer l'application, vous devez créer un fichier `.env` à la racine du projet si ce n'est pas déjà fait.
+
+Le fichier `.env` doit contenir les variables suivantes :
+
+```env
+# Base de données PostgreSQL
+POSTGRES_DB
+POSTGRES_USER
+POSTGRES_PASSWORD
+
+# Configuration Spring Boot
+SPRING_DATASOURCE_URL
+SPRING_DATASOURCE_USERNAME
+SPRING_DATASOURCE_PASSWORD
+SPRING_DATASOURCE_DRIVER_CLASS_NAME
+
+# Configuration JPA
+SPRING_JPA_HIBERNATE_DDL_AUTO
+SPRING_JPA_SHOW_SQL
+SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL
+
+# Configuration application
+SPRING_THYMELEAF_CACHE
+SPRING_WEB_LOCALE
+SPRING_WEB_LOCALE_RESOLVER
+SERVER_PORT
+
+# Profil Spring actif
+SPRING_PROFILES_ACTIVE
+
+# Options JVM
+JAVA_OPTS
+```
+
+Note : Le fichier `.env` est dans le `.gitignore` pour des raisons de sécurité.
+
+## Architecture Dockerisée
 
 ### Services
 
@@ -77,7 +126,7 @@ L'application sera accessible sur : **http://localhost:8080**
 - **pdf_storage** : Stockage des factures PDF générées
 - **pgadmin_data** : Configuration PgAdmin
 
-## 🔧 Configuration Multi-Environnement
+## Configuration Multi-Environnement
 
 ### Développement
 
@@ -91,25 +140,25 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
 ```
 
-## 📊 Fonctionnalités de l'Application
+## Fonctionnalités de l'Application
 
-### ✅ Pages Disponibles
+### Pages Disponibles
 
-- **🔐 Authentification** : `/login`, `/register`
-- **🏠 Tableau de bord** : `/`
-- **🏢 Gestion entreprises** : `/entreprises`
-- **📄 Facturation** : `/facturation`
-- **📊 Bilans** : `/bilan`
-- **⚙️ Prestations** : `/prestation`
+- **Authentification** : `/login`, `/register`
+- **Tableau de bord** : `/`
+- **Gestion entreprises** : `/entreprises`
+- **Facturation** : `/facturation`
+- **Bilans** : `/bilan`
+- **Prestations** : `/prestation`
 
-### 🗄️ Base de Données
+### Base de Données
 
 - **PostgreSQL 15** avec données de test automatiquement chargées
 - **Utilisateur** : `facturation_user`
 - **Base** : `financial_db`
 - **Fixtures** : Chargées via `fixtures_new.sql`
 
-## 🐳 Optimisations Docker
+## Optimisations Docker
 
 ### Dockerfile Multi-Stage
 
@@ -136,32 +185,16 @@ healthcheck:
   retries: 5
 ```
 
-### Variables d'Environnement
-
-Toute la configuration est externalisée via variables d'environnement :
-
-```bash
-# Base de données
-SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/financial_db
-SPRING_DATASOURCE_USERNAME=facturation_user
-SPRING_DATASOURCE_PASSWORD=secure_password_2024
-
-# Application
-SPRING_PROFILES_ACTIVE=docker
-SERVER_PORT=8080
-JAVA_OPTS=-Xmx512m -Xms256m
-```
-
-## 🔒 Sécurité
+## Sécurité
 
 ### Mesures Implémentées
 
-- ✅ Utilisateur non-root dans les conteneurs
-- ✅ Images Alpine (surface d'attaque réduite)
-- ✅ Secrets via variables d'environnement
-- ✅ Réseau isolé pour les services
-- ✅ Health checks avec timeout
-- ✅ Gestion propre des signaux (dumb-init)
+- Utilisateur non-root dans les conteneurs
+- Images Alpine (surface d'attaque réduite)
+- Secrets via variables d'environnement
+- Réseau isolé pour les services
+- Health checks avec timeout
+- Gestion propre des signaux (dumb-init)
 
 ### Recommandations Production
 
@@ -173,7 +206,7 @@ docker scout cves facturation-app:latest
 docker secret create db_password_v2 password.txt
 ```
 
-## 📈 Monitoring & Debugging
+## Monitoring & Debugging
 
 ### Logs
 
@@ -210,9 +243,9 @@ Le mode développement active :
 - PgAdmin automatiquement lancé
 - Hot reload activé
 
-## � Partage Multi-Plateforme
+## Partage Multi-Plateforme
 
-### 📦 Distribution de l'Application
+### Distribution de l'Application
 
 Pour partager votre application avec des utilisateurs Windows :
 
@@ -237,7 +270,7 @@ Pour partager votre application avec des utilisateurs Windows :
    - Scripts de démarrage pour tous les OS
    - Tous les fichiers nécessaires
 
-### 🌐 Distribution via Git
+### Distribution via Git
 
 ```bash
 # L'utilisateur Windows clone le repo
@@ -250,7 +283,7 @@ cd facturation
 start-demo.bat      # Command Prompt
 ```
 
-## �🚧 Résolution de Problèmes
+## Résolution de Problèmes
 
 ### Problèmes Courants
 
@@ -297,49 +330,34 @@ docker-compose exec postgres-db pg_dump -U facturation_user financial_db > backu
 docker-compose exec -T postgres-db psql -U facturation_user financial_db < backup.sql
 ```
 
-## 📦 Structure du Projet
+## Structure du Projet
 
 ```
 facturation/
-├── 🐳 Docker
+├── Docker
 │   ├── Dockerfile                  # Build multi-stage optimisé
 │   ├── .dockerignore              # Exclusions Docker
 │   ├── docker-compose.yml         # Orchestration principale
 │   ├── docker-compose.dev.yml     # Override développement
 │   └── docker-compose.prod.yml    # Override production
-├── 🔧 Scripts
+├── Scripts
 │   ├── start-demo.sh              # Démarrage automatisé (Linux/macOS)
 │   ├── start-demo.ps1             # Démarrage automatisé (Windows PowerShell)
 │   └── start-demo.bat             # Démarrage automatisé (Windows CMD)
-├── 📁 Application
+├── Application
 │   ├── src/                       # Code source Spring Boot
 │   ├── pom.xml                    # Dépendances Maven
 │   └── fixtures_new.sql           # Données de test
-└── 📚 Documentation
+└── Documentation
     └── README.md                  # Ce fichier
 ```
 
-## 🎯 Points d'Évaluation Couverts
-
-| Critère            | Implémentation                   | Points |
-| ------------------ | -------------------------------- | ------ |
-| **Dockerfile**     | Multi-stage, Alpine, non-root    | 4/4    |
-| **Docker Compose** | Multi-services, réseaux, volumes | 4/4    |
-| **Fonctionnalité** | App complète avec BDD            | 3/3    |
-| **Optimisations**  | Health checks, multi-stage       | 3/3    |
-| **Sécurité**       | Utilisateur non-root, secrets    | 2/2    |
-| **Innovation**     | Scripts auto, multi-env          | 1/1    |
-
-## 👥 Équipe
+## Équipe
 
 - **Développement** : ismail450
 - **Dockerisation** : Ismail450
 - **Documentation** : Ismail450
 
-## 📄 Licence
+## Licence
 
 Projet d'évaluation - Formation Conteneurisation & Orchestration
-
----
-
-**🎉 Ready for Demo!** L'application est prête pour la soutenance avec tous les critères d'évaluation couverts.
